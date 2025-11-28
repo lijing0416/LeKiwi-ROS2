@@ -1,27 +1,20 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="lekiwi">
     <xacro:arg name="initial_positions_file" default="initial_positions.yaml" />
-    <xacro:arg name="use_fake_hardware" default="false" />
-
-    <!-- Import lekiwi mobile base urdf file (includes proper base frame connections) -->
     <xacro:include filename="$(find lekiwi)/urdf/lekiwi_complete.urdf" />
 
-    <!-- Import control_xacro -->
-    <xacro:include filename="lekiwi.ros2_control.xacro" />
-
-    <!-- Add base_footprint as the root frame with proper orientation -->
-    <!-- This aligns the coordinate system: X=forward, Y=left, Z=up -->
     <link name="base_footprint" />
-
     <joint name="base_footprint_joint" type="fixed">
         <parent link="base_footprint" />
         <child link="base_link" />
-        <!-- Apply 90-degree rotation to align coordinate frames: X=forward, Y=left -->
-        <origin xyz="0 0 0" rpy="0 0 -1.5708" />
+        <origin xyz="0.0 0.0 0.026" rpy="0 0 0" />
     </joint>
+
+    <xacro:include filename="$(find lekiwi)/config/lekiwi.ros2_control.xacro" /> 
 
     <xacro:lekiwi_ros2_control
         name="SO100ARM"
         initial_positions_file="$(arg initial_positions_file)"
-        use_fake_hardware="$(arg use_fake_hardware)" />
-</robot>
+        />
+
+    </robot>

@@ -1,5 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <robot name="LeKiwi">
+    <gazebo>
+    <plugin name="gz_ros2_control" filename="libgz_ros2_control-system.so">
+        <param name="update_rate">1000</param>
+    </plugin>
+    </gazebo>
 
     <!-- Material Definitions -->
     <material name="mobile_base_material">

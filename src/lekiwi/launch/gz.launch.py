@@ -1,141 +1,190 @@
-#!/usr/bin/env python3
+import os
+import yaml
+from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, DeclareLaunchArgument, OpaqueFunction, RegisterEventHandler
-from launch.event_handlers import OnProcessExit
+from launch.actions import IncludeLaunchDescription, TimerAction, DeclareLaunchArgument, OpaqueFunction
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, Command
 from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterValue
+from launch_ros.parameter_descriptions import ParameterValue 
 from launch_ros.substitutions import FindPackageShare
-from controller_manager_msgs.srv import SwitchController
-import os
 
-def get_robot_description(context, *args, **kwargs):
-    dof = LaunchConfiguration('dof').perform(context)
-    pkg_share = FindPackageShare('lekiwi').find('lekiwi')
-    urdf_path = os.path.join(pkg_share, 'urdf', f'lekiwi_{dof}dof.urdf')
-    controller_path = os.path.join(pkg_share, 'config', f'controllers_{dof}dof.yaml')
+
+def get_robot_description(context):
+    """
+    读取 Xacro 文件，将其转换为 URDF 字符串，并将 package:// 路径替换为绝对路径。
+    """
+    package_name = 'lekiwi'
+    pkg_share = get_package_share_directory(package_name)
     
-    with open(urdf_path, 'r') as file:
-        urdf_content = file.read()
-        # Convert package:// to model:// for Gazebo
-        replace_str = f'package://lekiwi/models/lekiwi_{dof}dof/meshes'
-        with_str = f'model://lekiwi_{dof}dof/meshes'
-        gazebo_urdf_content = urdf_content.replace(replace_str, with_str)
-        return {
-            'robot_description': ParameterValue(urdf_content, value_type=str),
-            'gazebo_description': ParameterValue(gazebo_urdf_content, value_type=str),
-            'controller_path': controller_path
-        }
+    # Xacro 和 YAML 路径
+    xacro_file = PathJoinSubstitution([
+        FindPackageShare(package_name), 'config', 'lekiwi.urdf.xacro'
+    ])
+    initial_positions_path = PathJoinSubstitution([
+        FindPackageShare(package_name), 'config', 'initial_positions.yaml'
+    ])
+    
+    # 1. 执行 Xacro 命令行并获取 URDF 字符串
+    # 假设使用 use_fake_hardware:=true 宏参数
+    robot_description_command = Command([
+        'xacro ', xacro_file,
+        ' initial_positions_file:=', initial_positions_path, 
+        ' use_fake_hardware:=', 'true'
+    ])
+    
+    # 必须在 OpaqueFunction 内部执行 Command
+    urdf_content = context.perform_substitution(robot_description_command)
 
-def generate_launch_description():
-    dof_arg = DeclareLaunchArgument(
-        'dof',
-        default_value='5',
-        description='DOF configuration - either 5 or 7'
+    # 2. 强制路径替换（以兼容 Gazebo）
+    absolute_mesh_path_prefix = pkg_share + os.sep
+    processed_urdf_content = urdf_content.replace(f'package://{package_name}/', absolute_mesh_path_prefix)
+
+    # 3. 将处理后的字符串包装为 ParameterValue
+    robot_description = ParameterValue(processed_urdf_content, value_type=str)
+    
+    return {'robot_description': robot_description}
+
+
+def launch_setup(context, *args, **kwargs):
+    
+    descriptions = get_robot_description(context)
+    package_name = 'lekiwi'
+    pkg_share = get_package_share_directory(package_name)
+
+    # --- 1. 节点参数 ---
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    
+    # 控制器配置文件路径
+    controller_config_path = os.path.join(
+        pkg_share, 'config', 'controllers.yaml'
+    )
+    with open(controller_config_path, 'r') as f:
+        config_dict = yaml.safe_load(f)
+
+    try:
+        controller_params = config_dict['controller_manager']['ros__parameters']
+    except KeyError:
+        print("YAML 结构不正确：缺少 'controller_manager' 或 'ros__parameters' 键。")
+        controller_params = {}
+    print(f"\n--- DEBUG PATH: Controller Config Path is: {controller_config_path} ---\n")
+    # 注意：这里我们不再使用 Python 读取和解包 YAML
+
+    # --- 2. 节点定义 ---
+    
+    # 2.1 发布 URDF 模型
+    robot_state_publisher_node = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        name='robot_state_publisher',
+        output='screen',
+        parameters=[{
+            'robot_description': descriptions['robot_description'], 
+            'use_sim_time': use_sim_time,
+            'publish_frequency': 100.0 
+        }]
+    )
+    
+    # 2.2 ros2_control_node (控制器管理器)
+    control_node = Node(
+        package='controller_manager',
+        executable='ros2_control_node',
+        name='controller_manager',
+        output='screen',
+        remappings=[
+            ('~/robot_description', '/robot_description') 
+        ],
+        parameters=[controller_params], # 恢复传递字典
     )
 
-    pkg_share = FindPackageShare('lekiwi').find('lekiwi')
-    model_path = os.path.join(os.path.dirname(os.path.dirname(pkg_share)), 'models')
+    # 2.3 在 Gazebo 中创建实体 (create node)
+    create_entity = Node(
+        package='ros_gz_sim',
+        executable='create',
+        arguments=[
+            '-name', 'lekiwi_robot',
+            '-topic', 'robot_description', 
+            '-z', '0.0',
+        ],
+        output='screen',
+    )
 
-    # Set Gazebo model path
-    if 'GZ_SIM_RESOURCE_PATH' in os.environ:
-        os.environ['GZ_SIM_RESOURCE_PATH'] += f":{model_path}"
-    else:
-        os.environ['GZ_SIM_RESOURCE_PATH'] = model_path
+    # 2.4 控制器加载器 (使用 spawner Node)
+    
+    joint_state_broadcaster_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['joint_state_broadcaster', '-c', '/controller_manager'],
+        output='screen',
+    )
+    
+    lekiwi_arm_controller_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['lekiwi_arm_controller', '-c', '/controller_manager'],
+        output='screen',
+    )
 
-    def launch_setup(context, *args, **kwargs):
-        descriptions = get_robot_description(context)
-        
-        spawn_robot = Node(
-            package='ros_gz_sim',
-            executable='create',
-            name='spawn_model',
-            arguments=[
-                '-string', descriptions['gazebo_description'].value,
-                '-name', 'lekiwi',
-                '-allow_renaming', 'true',
-                '-x', '0',
-                '-y', '0',
-                '-z', '0'
-            ],
-            output='screen'
-        )
-
-        joint_state_broadcaster_spawner = ExecuteProcess(
-            cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-                'joint_state_broadcaster'],
-            output='screen'
-        )
-
-        joint_trajectory_controller_spawner = ExecuteProcess(
-            cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-                'joint_trajectory_controller'],
-            output='screen'
-        )
-
-        gripper_controller_spawner = ExecuteProcess(
-            cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-                'gripper_controller'],
-            output='screen'
-        )
-
-        nodes = [
-            Node(
-                package='robot_state_publisher',
-                executable='robot_state_publisher',
-                name='robot_state_publisher',
-                output='screen',
-                parameters=[{'robot_description': descriptions['robot_description']}]
-            ),
-            
-            ExecuteProcess(
-                cmd=['gz', 'sim', '-r', 'empty.sdf'],
-                output='screen',
-                additional_env={'GZ_SIM_RESOURCE_PATH': os.environ['GZ_SIM_RESOURCE_PATH']}
-            ),
-
-            # Bridge between ROS2 and Gazebo
-            Node(
-                package='ros_gz_bridge',
-                executable='parameter_bridge',
-                name='bridge',
-                parameters=[{
-                    'qos_overrides./tf_static.publisher.durability': 'transient_local',
-                }],
-                arguments=[
-                    '/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock',
-                    '/tf@tf2_msgs/msg/TFMessage[ignition.msgs.Pose_V',
-                    '/tf_static@tf2_msgs/msg/TFMessage[ignition.msgs.Pose_V',
-                ],
-            ),
-
-            spawn_robot,
-
-            RegisterEventHandler(
-                event_handler=OnProcessExit(
-                    target_action=spawn_robot,
-                    on_exit=[joint_state_broadcaster_spawner]
-                )
-            ),
-
-            RegisterEventHandler(
-                event_handler=OnProcessExit(
-                    target_action=joint_state_broadcaster_spawner,
-                    on_exit=[joint_trajectory_controller_spawner]
-                )
-            ),
-
-            RegisterEventHandler(
-                event_handler=OnProcessExit(
-                    target_action=joint_trajectory_controller_spawner,
-                    on_exit=[gripper_controller_spawner]
-                )
-            )
+    lekiwi_wheel_controller_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['lekiwi_wheel_controller', '-c', '/controller_manager'],
+        output='screen',
+    )
+    
+    # 3. 时序控制
+    
+    # 延迟启动实体创建和 Controller Manager，确保 RSP 启动
+    delayed_nodes_launch = TimerAction(
+        period=1.5, 
+        actions=[
+            create_entity,      
+            control_node        
         ]
-        return nodes
+    )
+    
+    # 延迟启动控制器加载 (在 Controller Manager 启动后再次延迟)
+    controller_spawners = TimerAction(
+        period=3.0, 
+        actions=[
+            joint_state_broadcaster_spawner,
+            lekiwi_arm_controller_spawner,
+            lekiwi_wheel_controller_spawner
+        ]
+    )
+
+    return [
+        robot_state_publisher_node, 
+        delayed_nodes_launch,       
+        controller_spawners         
+    ]
+
+
+def generate_launch_description():
+    # --- 启动 Gazebo ---
+    gz_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            PathJoinSubstitution([
+                get_package_share_directory('ros_gz_sim'),
+                'launch',
+                'gz_sim.launch.py'
+            ])
+        ]),
+        launch_arguments={'gz_args': '-r empty.sdf'}.items()
+    )
 
     return LaunchDescription([
-        dof_arg,
+        # 启动参数定义
+        DeclareLaunchArgument(
+            'use_sim_time',
+            default_value='true',
+            description='Use simulation time if true'
+        ),
+        
+        # 启动 Gazebo
+        gz_launch,
+        
+        # OpaqueFunction 包装所有节点和逻辑
         OpaqueFunction(function=launch_setup)
     ])

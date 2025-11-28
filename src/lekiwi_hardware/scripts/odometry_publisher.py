@@ -9,6 +9,9 @@ import tf2_ros
 import numpy as np
 import math
 import time
+#兼容旧版本numpy
+if not hasattr(np, 'float'):
+    np.float = np.float64
 from tf_transformations import quaternion_from_euler
 
 class OdometryPublisher(Node):

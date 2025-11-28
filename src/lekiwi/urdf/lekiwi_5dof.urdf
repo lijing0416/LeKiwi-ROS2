@@ -44,7 +44,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Base.STL" />
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Base.STL" />
       </geometry>
       <material
         name="">
@@ -58,7 +58,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Base.STL" />
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Base.STL" />
       </geometry>
     </collision>
   </link>
@@ -85,7 +85,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Shoulder_Rotation_Pitch.STL" />
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Shoulder_Rotation_Pitch.STL" />
       </geometry>
       <material
         name="">
@@ -99,7 +99,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Shoulder_Rotation_Pitch.STL"
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Shoulder_Rotation_Pitch.STL"
           scale="0.9 0.9 0.9" />
       </geometry>
     </collision>
@@ -139,7 +139,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Upper_Arm.STL" />
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Upper_Arm.STL" />
       </geometry>
       <material
         name="">
@@ -153,7 +153,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Upper_Arm.STL"
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Upper_Arm.STL"
           scale="0.9 0.9 0.9" />
       </geometry>
     </collision>
@@ -193,7 +193,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Lower_Arm.STL" />
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Lower_Arm.STL" />
       </geometry>
       <material
         name="">
@@ -207,7 +207,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Lower_Arm.STL"
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Lower_Arm.STL"
           scale="0.9 0.9 0.9" />
       </geometry>
     </collision>
@@ -247,7 +247,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Wrist_Pitch_Roll.STL" />
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Wrist_Pitch_Roll.STL" />
       </geometry>
       <material
         name="">
@@ -261,7 +261,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Wrist_Pitch_Roll.STL"
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Wrist_Pitch_Roll.STL"
           scale="0.9 0.9 0.9" />
       </geometry>
     </collision>
@@ -301,7 +301,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Fixed_Gripper.STL" />
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Fixed_Gripper.STL" />
       </geometry>
       <material
         name="">
@@ -315,7 +315,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Fixed_Gripper.STL"
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Fixed_Gripper.STL"
           scale="0.9 0.9 0.9" />
       </geometry>
     </collision>
@@ -355,7 +355,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Moving_Jaw.STL" />
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Moving_Jaw.STL" />
       </geometry>
       <material
         name="">
@@ -369,7 +369,7 @@ Stephen Brawner (brawner@gmail.com)
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="file://$(find lekiwi)/models/lekiwi_5dof/meshes/Moving_Jaw.STL"
+          filename="model://lekiwi/models/lekiwi_5dof/meshes/Moving_Jaw.STL"
           scale="0.9 0.9 0.9" />
       </geometry>
     </collision>

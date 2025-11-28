@@ -13,19 +13,19 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 def generate_launch_description():
     use_sim_time_arg = DeclareLaunchArgument(
         'use_sim_time',
-        default_value='false',
+        default_value='true',
         description='Use simulation (Gazebo) clock if true'
     )
 
     use_fake_hardware_arg = DeclareLaunchArgument(
         'use_fake_hardware',
-        default_value='false',
+        default_value='true',
         description='Use fake hardware'
     )
 
     autostart_arg = DeclareLaunchArgument(
         'autostart',
-        default_value='true',
+        default_value='false',
         description='Automatically startup the nav2 stack'
     )
 
@@ -49,13 +49,13 @@ def generate_launch_description():
 
     start_nav2_arg = DeclareLaunchArgument(
         'start_nav2',
-        default_value='true',
+        default_value='false',
         description='Start Nav2 navigation stack'
     )
 
     start_moveit_arg = DeclareLaunchArgument(
         'start_moveit',
-        default_value='true',
+        default_value='false',
         description='Start MoveIt motion planning'
     )
 
@@ -67,7 +67,7 @@ def generate_launch_description():
 
     start_cameras_arg = DeclareLaunchArgument(
         'start_cameras',
-        default_value='true',
+        default_value='false',
         description='Start camera video feeds'
     )
 
